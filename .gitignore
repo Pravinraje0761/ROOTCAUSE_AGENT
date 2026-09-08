@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+**/venv/
+**/.venv/
+
+# Environment / secrets
+.env
+.env.*
+.env.local
+**/.env
+**/.env.*
+
+# Database files
+*.db
+*.sqlite3
+*.sqlite
+
+# Node
+node_modules/
+**/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+**/*.log
+
+# Dumps, binaries & large archives
+*.hprof
+*.apk
+*.zip
+*.tar
+*.gz
+*.dill
+*.bin
+.dart_tool/
+**/.dart_tool/
+
+# Exclude WE_WILL_WIN folder
+WE_WILL_WIN/
+
+# Dynamic cloned workspaces
+backend/app/workspaces/

@@ -1,0 +1,2 @@
+$proc = Start-Process -FilePath "python" -ArgumentList "-m","uvicorn","backend.app.main:app","--host","127.0.0.1","--port","8000","--log-level","info" -WorkingDirectory "C:\Users\pravi\OneDrive\Desktop\agent_AI_folder" -RedirectStandardOutput "C:\Users\pravi\OneDrive\Desktop\agent_AI_folder\server_out.log" -RedirectStandardError "C:\Users\pravi\OneDrive\Desktop\agent_AI_folder\server_err.log" -PassThru -WindowStyle Hidden
+Write-Output "Started PID: $($proc.Id)"

@@ -1,0 +1,12 @@
+node_modules
+venv
+.env
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+*.db
+frontend/dist
+frontend/node_modules
+WE_WILL_WIN/_to_delete
