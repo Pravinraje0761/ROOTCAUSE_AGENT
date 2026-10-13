@@ -47,7 +47,7 @@ graph TD
     end
     
     Controller <-->|Read/Write State| StateStore[(PostgreSQL state_store)]
-    Controller <-->|Semantic Past Cases| MemStore[(PostgreSQL + pgvector)]
+    Controller <-->|Similar Past Cases| MemStore[(PostgreSQL / SQLite<br/>keyword-vector similarity)]
     
     subgraph Tool Layer [External Integrations]
         Planner -->|Execute Tool| ToolRouter{Tool Router}

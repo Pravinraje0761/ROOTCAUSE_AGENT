@@ -24,7 +24,10 @@ jobs:
       - name: Tests
         run: python -m pytest -q
       - name: Baseline sweep (simulated scenarios)
-        run: python evaluation/run_sweep.py | tail -12
+        # pipefail: without it a crash in the sweep is masked by tail's exit status
+        run: |
+          set -o pipefail
+          python evaluation/run_sweep.py | tail -12
 
   frontend:
     name: Dashboard type-check and build
