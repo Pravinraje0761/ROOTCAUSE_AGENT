@@ -1,19 +1,33 @@
 # RootCause AI
 
-RootCause AI is an autonomous, self-verifying failure-investigation and root-cause verification agent. It moves beyond standard observability dashboards and passive log-summarizing chatbots by adopting an active scientific method approach: ingest system failures, construct git/deployment timelines, formulate competing hypotheses, run isolated sandbox experiments to gather evidence, update Bayesian belief states, replicate failures in replica workspaces, apply code patches, and statistically verify restoration before deploying fixes to production.
+[![CI](https://github.com/Pravinraje0761/ROOTCAUSE_AGENT/actions/workflows/ci.yml/badge.svg)](https://github.com/Pravinraje0761/ROOTCAUSE_AGENT/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+An agent that investigates production failures the way an engineer would: gather evidence,
+propose competing hypotheses, run the experiment that is expected to be most informative,
+update its beliefs, reproduce the failure in a sandbox, then propose a patch and verify it.
+It is built as a LangGraph state machine behind a FastAPI service, with a React dashboard.
+
+> **Scope.** Telemetry, git history and the five failure scenarios are **simulated**
+> (`backend/app/simulator.py`). The agent investigates a real application in its sandbox
+> (the [NeoGuard](https://github.com/Pravinraje0761/neogaurd) service), but the faults are
+> injected by the simulator. Hypothesis generation and belief updates are rule-based and
+> Bayesian; the agent does not call an LLM.
 
 ---
 
-## 🚀 Key Features
+## How it works
 
-*   **Scientific Investigation Loop**: Operates on a structured cycle: `Evidence` → `Hypothesis` → `Experiment` → `Belief Update` → `Reproduction` → `Verification`.
-*   **Competing Hypothesis Engine**: Dynamic Bayesian belief scores are updated in real-time as the agent runs diagnostic experiments.
-*   **Secure Sandbox Manager**: Diagnostic scripts and regression suites are executed in isolated process jails or Docker containers to safeguard host environments.
-*   **Operator Approval Gateway**: Green-level telemetry operations run automatically, Yellow-level sandbox trials run safely, and Red-level production fixes halt for explicit human verification.
-*   **Long-Term Incident Memory**: Utilizes PostgreSQL + `pgvector` (with a local database fallback) to retrieve semantically related past failures and leverage successful patches.
-*   **Interactive Simulation Suite**: Injects 5 realistic production failures (e.g. data drift, version skews, preprocessing regressions) to evaluate and demo system autonomy.
-
----
+- **Investigation loop:** triage → evidence → hypotheses → experiment → belief update →
+  reproduction → fix → verification (`backend/app/agent.py`).
+- **Experiment selection:** each candidate experiment is scored by expected information gain
+  (Shannon entropy reduction under a 95%-sensitive, 95%-specific diagnostic).
+- **Sandbox:** diagnostic scripts run in a Docker container when Docker is available, and in a
+  local subprocess otherwise (`backend/app/sandbox.py`).
+- **Approval gate:** read-only actions run automatically, sandbox actions are logged, and
+  production patches stop for human approval.
+- **Incident memory:** past incidents are stored in PostgreSQL (SQLite fallback) and
+  retrieved by cosine similarity over keyword-feature vectors (`backend/app/memory.py`).
 
 ## 📐 System Architecture
 
@@ -51,88 +65,60 @@ graph TD
 
 ---
 
-## 🛠️ Tech Stack
+## Evaluation
 
-*   **Backend**: Python 3.10+, FastAPI, LangGraph, SQLAlchemy.
-*   **Database**: PostgreSQL with `pgvector` extension (sqlite fallback enabled for local offline execution).
-*   **Frontend**: React (Vite, TypeScript, Tailwind CSS v4, Recharts, Lucide Icons).
-*   **Orchestration**: Docker & Docker Compose.
+`evaluation/run_sweep.py` runs the agent and four baselines on the five simulated scenarios:
 
----
+| Method | Root cause found | Experiments run | Brier score (lower is better) |
+|---|--:|--:|--:|
+| Random experiment order | 100% | 3.2 | 0.044 |
+| Prior-only (single guess, no experiments) | 40% | 0.0 | 0.778 |
+| ReAct-style | 100% | 2.2 | 0.253 |
+| Bayesian, fixed experiment order | 100% | 2.0 | 0.039 |
+| **RootCause (Bayesian + information gain)** | **100%** | 3.0 | **0.022** |
 
-## 📦 Setup & Execution
+What this does and does not show:
 
-RootCause AI is designed with dual-execution capabilities: runs out-of-the-box locally via SQLite/Subprocess, or deploys via Docker Compose for production scale.
+- Any method that runs experiments finds the cause in all five scenarios, so **accuracy does not
+  separate them here**; the scenarios are too easy to do that.
+- RootCause ends with the best-calibrated beliefs (lowest Brier score), but its margin over the
+  plain Bayesian baseline is small, and that baseline needs fewer experiments.
+- Five scenarios are too few for any difference to be statistically meaningful. A larger, harder
+  scenario set is the main next step.
+- The sweep also prints "LLM calls" and "cost" columns; these are modelled from the number of
+  tool calls, not measured from real API usage.
 
-### Method 1: Local Out-of-the-Box Setup (Fastest)
+`python benchmark.py` runs the agent alone on each scenario and prints its trace.
 
-1.  **Clone the Repository**:
-    ```bash
-    git clone https://github.com/your-username/rootcause-ai.git
-    cd rootcause-ai
-    ```
+## Setup
 
-2.  **Setup Virtual Environment & Install Dependencies**:
-    ```bash
-    python -m venv venv
-    venv\Scripts\activate      # On Windows
-    # source venv/bin/activate  # On Linux/macOS
-    pip install -r requirements.txt
-    ```
-
-3.  **Run Evaluation Suite (Benchmarks)**:
-    Verify the orchestrator and all 5 scenarios locally:
-    ```bash
-    python benchmark.py
-    ```
-
-4.  **Start FastAPI Backend Server**:
-    ```bash
-    uvicorn backend.app.main:app --reload --port 8000
-    ```
-
-5.  **Start Frontend Dev Server**:
-    ```bash
-    cd frontend
-    npm install
-    npm run dev
-    ```
-    Access the dashboard at `http://localhost:3000`.
-
----
-
-### Method 2: Docker Compose Setup
-
-Run the full production stack including PostgreSQL with pgvector:
 ```bash
-docker-compose up --build
+git clone https://github.com/Pravinraje0761/ROOTCAUSE_AGENT.git
+cd ROOTCAUSE_AGENT
+python -m venv venv && source venv/bin/activate      # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# The application the agent investigates:
+git clone https://github.com/Pravinraje0761/neogaurd.git WE_WILL_WIN/neoguard_app
+#   (or point TARGET_APP_DIR at another copy)
+
+pytest                                   # 26 tests
+python evaluation/run_sweep.py           # baseline comparison
+uvicorn backend.app.main:app --port 8000 # API
+cd frontend && npm install && npm run dev  # dashboard on http://localhost:3000
 ```
-Access the client dashboard at `http://localhost:3000` and backend API endpoints at `http://localhost:8000`.
 
----
-
-## 📊 Evaluation & Comparison Matrix
-
-Running `benchmark.py` evaluates all 5 production fault injectors under different architectures. Traditional monitoring alerts on issues, and typical LLM prompters summarize logs, but only RootCause AI reproduces and verifies fixes:
-
-| Metric / Feature                  | Traditional Monitoring (Prometheus/Grafana) | Generative LLM Prompter (RAG summaries) | RootCause AI (Autonomous Agent) |
-|-----------------------------------|---------------------------------------------|-----------------------------------------|---------------------------------|
-| **Anomaly Detection**             | YES (Rule-Based Alerts)                     | NO (Passive; needs manual input)         | YES (Automated Alert Ingestion) |
-| **Evidence Gathering**            | NO (Manual dashboard searches)              | NO (Limited log summary context)        | YES (Dynamic API/Tool queries)  |
-| **Competing Hypothesis Modeling** | NO (None)                                   | NO (Single-guess bias)                  | YES (Bayesian Belief scoring)   |
-| **Sandbox Code Execution**        | NO (None)                                   | NO (None)                               | YES (Isolated Process Jails)    |
-| **Failure Reproduction**          | NO (None)                                   | NO (None)                               | YES (Automatic workspace clone) |
-| **Controlled Rollback & Verify**   | NO (Manual SRE action)                      | NO (Guesswork recommendation)           | YES (Git patch & test rerun)    |
-| **Long-Term Incident Memory**     | NO (None)                                   | NO (Basic vector search)                | YES (pgvector incident matching)|
-| **Mean Time to Resolution (MTTR)**| Hours (Manual search)                       | 30 - 60 minutes                         | **< 2 minutes (Fully automated)** |
-
----
+With Docker: `docker-compose up --build` starts PostgreSQL, the API and the dashboard.
 
 ## 🖥️ Demo Scenarios
 
-The system exposes 5 distinct fault scenarios through the header toolbar:
-1.  **#104 Preprocessing**: Replaces MinMax features scaling with Standard normalizer, causing model accuracy drop from 94.2% to 71.3% due to out-of-range weights.
+The dashboard exposes five simulated fault scenarios:
+1.  **#104 Preprocessing**: Replaces MinMax features scaling with Standard normalizer, with an illustrative scripted accuracy drop from 94.2% to 71.3%.
 2.  **#105 Version Mismatch**: Deploys an uncalibrated version of the classifier.
 3.  **#106 Data Drift**: Shifts production input data features, simulating client-side covariate changes.
 4.  **#107 Dependency Upgrade**: Introduces library upgrade truncating floats and reducing precision.
-5.  **#108 Latency Lock**: Artificially limits worker thread pool concurrency to 1, causing query backlogs and latency spike to 2.4s.
+5.  **#108 Latency Lock**: Artificially limits worker thread pool concurrency to 1, causing a simulated latency spike to 2.4 s.
+
+## License
+
+[MIT](LICENSE)

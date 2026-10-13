@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     gemini_api_key: Optional[str] = None
     nvidia_api_key: Optional[str] = None
     
+    # The application the agent investigates (its sandbox copies and patches this).
+    # Defaults to WE_WILL_WIN/neoguard_app at the repository root; CI checks out the
+    # public NeoGuard repository there. Override with TARGET_APP_DIR.
+    target_app_dir: str = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "WE_WILL_WIN", "neoguard_app")
+
     use_docker_sandbox: bool = True
     docker_image_name: str = "rootcause-sandbox:latest"
 

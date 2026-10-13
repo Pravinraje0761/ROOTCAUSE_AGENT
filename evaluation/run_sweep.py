@@ -203,14 +203,15 @@ async def run_sweep():
             if not final_beliefs:
                 # Mock belief mapping for non-Bayesian baselines to calculate Brier score & entropy
                 # LLM-only and ReAct assign 100% confidence to their selected cause
-                final_beliefs = {h: 0.0 for h in ["H1", "H2", "H3", "H4", "H5"]}
-                final_beliefs[res["scenario_id"]] = res["confidence"] / 100.0
-                # Normalize others
-                rem = 1.0 - (res["confidence"] / 100.0)
-                other_count = len(final_beliefs) - 1
-                for h in final_beliefs:
-                    if h != res["scenario_id"]:
-                        final_beliefs[h] = rem / other_count
+                hyps = ["H1", "H2", "H3", "H4", "H5"]
+                # The baseline's confidence goes on the hypothesis it selected: the expected
+                # cause if it matched, otherwise a wrong one. (Previously it was keyed on the
+                # scenario id, e.g. "104", which is not a hypothesis, inflating baseline Brier.)
+                chosen = sc["expected_cause"] if res["matched_cause"] else next(
+                    h for h in hyps if h != sc["expected_cause"])
+                conf = res["confidence"] / 100.0
+                final_beliefs = {h: (1.0 - conf) / (len(hyps) - 1) for h in hyps}
+                final_beliefs[chosen] = conf
 
             # Multi-class Brier Score calculation
             brier = 0.0

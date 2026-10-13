@@ -314,7 +314,8 @@ from fastapi.responses import FileResponse
 
 # Try to find the documents directory relative to the project root
 _base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DOCUMENTS_DIR = os.path.join(_base_dir, "WE_WILL_WIN", "neoguard_app", "static", "documents")
+from backend.app.config import settings as _settings
+DOCUMENTS_DIR = os.path.join(_settings.target_app_dir, "static", "documents")
 if os.path.exists(DOCUMENTS_DIR):
     app.mount("/api/documents", StaticFiles(directory=DOCUMENTS_DIR), name="documents")
     logger.info(f"Successfully mounted NeoGuard static documents at /api/documents")
