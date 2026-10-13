@@ -11,8 +11,11 @@ logger = logging.getLogger(__name__)
 
 def get_embedding(text: str) -> List[float]:
     """
-    Generates embedding vector for the text using OpenAI/Gemini if keys are configured,
-    otherwise returns a simulated heuristic vector based on keyword overlap (deterministic).
+    Deterministic keyword-feature vector for the text (no external embedding model).
+
+    Each known failure keyword sets one dimension; the vector is L2-normalised so that
+    cosine similarity measures keyword overlap between incidents. The 1536 width only
+    keeps the stored shape compatible with common embedding sizes.
     """
     text_lower = text.lower()
     

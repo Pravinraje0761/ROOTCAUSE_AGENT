@@ -110,10 +110,14 @@ def test_belief_update_node():
 
 
 def test_compute_information_gain():
-    evidence = [{"evidence_type": "GIT", "content": "preprocessing fix"}]
-    experiments = []
-    ig = compute_information_gain("H3", evidence, experiments)
-    assert ig > 0
+    # Maximal uncertainty: gain = 1 - H(0.05) bits for a 95%-sensitive/specific test.
+    ig = compute_information_gain("H3", 0.5, set())
+    assert abs(ig - 0.7136) < 1e-3
+    # Nothing to learn from a hypothesis already tested or already resolved.
+    assert compute_information_gain("H3", 0.5, {"H3"}) == 0.0
+    assert compute_information_gain("H3", 0.99, set()) == 0.0
+    # Less uncertainty, less to gain.
+    assert compute_information_gain("H3", 0.3, set()) < ig
 
 
 def test_classify_risk():

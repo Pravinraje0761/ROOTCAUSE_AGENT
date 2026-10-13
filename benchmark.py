@@ -180,22 +180,7 @@ async def main():
         conf_str = f"{r['confidence']}%"
         print(f"{r['scenario_id']:<4} | {r['name']:<38} | {success_str:<7} | {cause_str:<11} | {r['tool_calls']:<5} | {conf_str:<6} | {r['status']:<8}")
 
-    print("\n\n==========================================================")
-    print("               ARCHITECTURAL COMPARISON MATRIX             ")
-    print("==========================================================")
-    
-    print("""
-| Metric / Feature                  | Traditional Monitoring (Prometheus/Grafana) | Generative LLM Prompter (RAG summaries) | RootCause AI (Autonomous Agent) |
-|-----------------------------------|---------------------------------------------|-----------------------------------------|---------------------------------|
-| **Anomaly Detection**             | YES (Rule-Based Alerts)                     | NO (Passive; needs manual input)         | YES (Automated Alert Ingestion) |
-| **Evidence Gathering**            | NO (Manual dashboard searches)              | NO (Limited log summary context)        | YES (Dynamic API/Tool queries)  |
-| **Competing Hypothesis Modeling** | NO (None)                                   | NO (Single-guess bias)                  | YES (Bayesian Belief scoring)   |
-| **Sandbox Code Execution**        | NO (None)                                   | NO (None)                               | YES (Isolated Process Jails)    |
-| **Failure Reproduction**          | NO (None)                                   | NO (None)                               | YES (Automatic workspace clone) |
-| **Controlled Rollback & Verify**   | NO (Manual SRE action)                      | NO (Guesswork recommendation)           | YES (Git patch & test rerun)    |
-| **Long-Term Incident Memory**     | NO (None)                                   | NO (Basic vector search)                | YES (pgvector incident matching)|
-| **Mean Time to Resolution (MTTR)**| Hours (Manual search)                       | 30 - 60 minutes                         | < 2 minutes (Fully automated)   |
-""")
-    
+    print("\nFor a comparison against baselines, run: python evaluation/run_sweep.py")
+
 if __name__ == "__main__":
     asyncio.run(main())

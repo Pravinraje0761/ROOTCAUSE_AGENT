@@ -14,9 +14,12 @@ def prepare_sandbox_workspace(directory: str):
     import shutil
     
     # Paths to copy
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    src_backend = os.path.join(base_dir, "WE_WILL_WIN", "neoguard_app", "backend")
-    src_static = os.path.join(base_dir, "WE_WILL_WIN", "neoguard_app", "static")
+    src_backend = os.path.join(settings.target_app_dir, "backend")
+    src_static = os.path.join(settings.target_app_dir, "static")
+    if not os.path.isdir(src_backend):
+        raise FileNotFoundError(
+            f"Target application not found at {settings.target_app_dir}. Clone "
+            "https://github.com/Pravinraje0761/neogaurd there, or set TARGET_APP_DIR.")
     
     # 1. Copy backend and static folders
     shutil.copytree(src_backend, directory, dirs_exist_ok=True)
